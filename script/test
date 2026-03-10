@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# prove_it: full test suite—runs when Claude signals "done"
+set -e
+trap 'prove_it record --name full-tests --result $?' EXIT
+cd dashboard
+rvm ruby-3.2.9@project-tracker do bundle exec bin/rails test

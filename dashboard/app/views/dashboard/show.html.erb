@@ -1,0 +1,52 @@
+<h1 class="text-2xl font-bold text-gray-900 mb-6">Dashboard</h1>
+
+<div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-4 mb-8">
+  <% Project.statuses.each_key do |status| %>
+    <% count = @status_counts[status] || 0 %>
+    <%= link_to projects_path(status: status), class: "block rounded-lg border p-4 text-center hover:shadow-md transition" do %>
+      <div class="text-2xl font-bold text-gray-900"><%= count %></div>
+      <div class="text-xs mt-1"><%= status_badge(status) %></div>
+    <% end %>
+  <% end %>
+</div>
+
+<% if @waiting_projects.any? %>
+  <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-8">
+    <h2 class="text-lg font-semibold text-yellow-800 mb-3">Waiting for Input</h2>
+    <ul class="space-y-2">
+      <% @waiting_projects.each do |project| %>
+        <li class="flex items-center justify-between">
+          <%= link_to project.title, project, class: "text-purple-700 hover:underline font-medium" %>
+          <span class="text-xs text-gray-500">
+            <% if project.waiting_since %>
+              since <%= time_ago_in_words(project.waiting_since) %> ago
+            <% end %>
+          </span>
+        </li>
+      <% end %>
+    </ul>
+  </div>
+<% end %>
+
+<div class="flex items-center justify-between mb-4">
+  <h2 class="text-lg font-semibold text-gray-900">Recent Activity</h2>
+  <%= link_to "All Projects", projects_path, class: "text-sm text-purple-700 hover:underline" %>
+</div>
+
+<div class="border rounded-lg divide-y">
+  <% @recent_activities.each do |activity| %>
+    <div class="p-3 flex items-start gap-3">
+      <div class="flex-1">
+        <%= link_to activity.project.title, activity.project, class: "font-medium text-gray-900 hover:text-purple-700" %>
+        <span class="text-gray-500 text-sm ml-2"><%= activity.action.humanize %></span>
+        <% if activity.details.present? %>
+          <p class="text-sm text-gray-600 mt-0.5"><%= truncate(activity.details, length: 120) %></p>
+        <% end %>
+      </div>
+      <span class="text-xs text-gray-400 whitespace-nowrap"><%= time_ago_in_words(activity.created_at) %> ago</span>
+    </div>
+  <% end %>
+  <% if @recent_activities.empty? %>
+    <div class="p-6 text-center text-gray-400">No activity yet.</div>
+  <% end %>
+</div>

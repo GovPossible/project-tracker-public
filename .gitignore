@@ -1,0 +1,19 @@
+# Environment config with secrets
+orchestrator/config.env
+
+# Node
+node_modules/
+
+# OS
+.DS_Store
+
+# IDE
+.idea/
+
+# MCP server config (contains API keys)
+.mcp.json
+
+# Claude Code local settings
+.claude/settings.local.json
+.claude/prove_it/config.local.json
+.claude/prove_it/sessions/

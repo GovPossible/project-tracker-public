@@ -1,0 +1,99 @@
+queued_critical:
+  title: "Fix login crash on Safari"
+  description: "Users on Safari 17 get a blank screen after login"
+  priority: 0
+  status: 0
+  source: 1
+  repos: <%= ["erp"].to_json %>
+  branches: <%= {}.to_json %>
+  pr_urls: <%= {}.to_json %>
+  honeybadger_fault_id: "hb_12345"
+  honeybadger_project_key: "proj_abc"
+  attempt_count: 0
+  max_attempts: 3
+
+queued_normal:
+  title: "Add bulk license renewal"
+  description: "Allow batch renewal of business licenses"
+  priority: 2
+  status: 0
+  source: 0
+  repos: <%= ["erp", "commportal-v2"].to_json %>
+  branches: <%= {}.to_json %>
+  pr_urls: <%= {}.to_json %>
+  attempt_count: 0
+  max_attempts: 3
+
+working:
+  title: "Refactor GL posting"
+  description: "Simplify the general ledger posting logic"
+  priority: 2
+  status: 1
+  source: 0
+  repos: <%= ["erp"].to_json %>
+  branches: <%= {"erp" => "claude/refactor-gl-posting"}.to_json %>
+  pr_urls: <%= {}.to_json %>
+  attempt_count: 1
+  max_attempts: 3
+
+waiting_input:
+  title: "Add cemetery map view"
+  description: "Interactive map for cemetery plot management"
+  priority: 1
+  status: 2
+  source: 0
+  repos: <%= ["erp"].to_json %>
+  branches: <%= {"erp" => "claude/cemetery-map"}.to_json %>
+  pr_urls: <%= {}.to_json %>
+  attempt_count: 1
+  max_attempts: 3
+  waiting_since: "2026-02-28 10:00:00"
+
+done:
+  title: "Fix date picker timezone"
+  description: "Date picker shows wrong date in EST"
+  priority: 0
+  status: 5
+  source: 1
+  repos: <%= ["erp"].to_json %>
+  branches: <%= {"erp" => "claude/fix-datepicker-tz"}.to_json %>
+  pr_urls: <%= {"erp" => "https://github.com/example-org/erp/pull/42"}.to_json %>
+  honeybadger_fault_id: "hb_99999"
+  attempt_count: 1
+  max_attempts: 3
+
+pr_review:
+  title: "Add webhook support"
+  description: "Handle GitHub PR webhooks"
+  priority: 2
+  status: 3
+  source: 0
+  repos: <%= ["erp"].to_json %>
+  branches: <%= {"erp" => "claude/webhook-support"}.to_json %>
+  pr_urls: <%= {"erp" => "https://github.com/example-org/erp/pull/99"}.to_json %>
+  attempt_count: 1
+  max_attempts: 3
+
+staging:
+  title: "Add audit logging"
+  description: "Log all admin actions"
+  priority: 2
+  status: 4
+  source: 0
+  repos: <%= ["erp"].to_json %>
+  branches: <%= {"erp" => "claude/audit-logging"}.to_json %>
+  pr_urls: <%= {"erp" => "https://github.com/example-org/erp/pull/100"}.to_json %>
+  attempt_count: 1
+  max_attempts: 3
+
+failed:
+  title: "Migrate to Turbo 8"
+  description: "Upgrade Turbo from 7 to 8"
+  priority: 3
+  status: 6
+  source: 0
+  repos: <%= ["erp"].to_json %>
+  branches: <%= {"erp" => "claude/turbo-8"}.to_json %>
+  pr_urls: <%= {}.to_json %>
+  attempt_count: 3
+  max_attempts: 3

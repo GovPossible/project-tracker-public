@@ -1,0 +1,63 @@
+<div class="flex items-center justify-between mb-6">
+  <h1 class="text-2xl font-bold text-gray-900">Projects</h1>
+  <%= link_to "New Project", new_project_path, class: "bg-purple-700 text-white px-4 py-2 rounded-lg text-sm hover:bg-purple-800" %>
+</div>
+
+<%= form_tag projects_path, method: :get, class: "mb-4" do %>
+  <% if params[:status].present? %>
+    <input type="hidden" name="status" value="<%= params[:status] %>">
+  <% end %>
+  <div class="flex gap-2">
+    <input type="text" name="q" value="<%= @query %>" placeholder="Search projects..." class="flex-1 border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
+    <button type="submit" class="bg-gray-100 text-gray-700 px-4 py-1.5 rounded-lg text-sm hover:bg-gray-200">Search</button>
+  </div>
+<% end %>
+
+<div class="flex gap-2 mb-4 flex-wrap">
+  <%= link_to "Active", projects_path(q: @query.presence), class: "px-3 py-1 rounded-full text-sm #{params[:status].blank? ? "bg-purple-700 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}" %>
+  <% Project.statuses.each_key do |status| %>
+    <%= link_to status.humanize, projects_path(status: status, q: @query.presence), class: "px-3 py-1 rounded-full text-sm #{params[:status] == status ? "bg-purple-700 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}" %>
+  <% end %>
+</div>
+
+<div class="border rounded-lg divide-y">
+  <% @projects.each do |project| %>
+    <div class="p-4 flex items-center gap-4 hover:bg-gray-50">
+      <div class="flex-1 min-w-0">
+        <%= link_to project.title, project, class: "font-medium text-gray-900 hover:text-purple-700" %>
+        <div class="flex items-center gap-2 mt-1">
+          <%= status_badge(project.status) %>
+          <%= waiting_on_badge(project) %>
+          <%= priority_badge(project.priority) %>
+          <% if project.repos.any? %>
+            <span class="text-xs text-gray-500"><%= project.repos.join(", ") %></span>
+          <% end %>
+        </div>
+      </div>
+      <div class="text-xs text-gray-400 whitespace-nowrap">
+        <%= time_ago_in_words(project.created_at) %> ago
+      </div>
+    </div>
+  <% end %>
+  <% if @projects.empty? %>
+    <div class="p-6 text-center text-gray-400">No projects found.</div>
+  <% end %>
+</div>
+
+<% if @total_pages > 1 %>
+  <div class="flex justify-center items-center gap-1 mt-4">
+    <% if @page > 1 %>
+      <%= link_to "\u2190 Previous", projects_path(page: @page - 1, q: @query.presence, status: params[:status].presence), class: "px-3 py-1 rounded text-sm text-gray-700 hover:bg-gray-100" %>
+    <% end %>
+    <% (1..@total_pages).each do |pg| %>
+      <% if pg == @page %>
+        <span class="px-3 py-1 rounded text-sm bg-purple-700 text-white"><%= pg %></span>
+      <% else %>
+        <%= link_to pg, projects_path(page: pg, q: @query.presence, status: params[:status].presence), class: "px-3 py-1 rounded text-sm text-gray-700 hover:bg-gray-100" %>
+      <% end %>
+    <% end %>
+    <% if @page < @total_pages %>
+      <%= link_to "Next \u2192", projects_path(page: @page + 1, q: @query.presence, status: params[:status].presence), class: "px-3 py-1 rounded text-sm text-gray-700 hover:bg-gray-100" %>
+    <% end %>
+  </div>
+<% end %>

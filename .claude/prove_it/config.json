@@ -1,0 +1,101 @@
+{
+  "enabled": true,
+  "sources": [
+    "dashboard/app/**/*.*",
+    "dashboard/config/**/*.*",
+    "dashboard/db/migrate/**/*.*",
+    "dashboard/lib/**/*.*",
+    "dashboard/test/**/*.*",
+    "mcp-server/src/**/*.*",
+    "mcp-server/test/**/*.*",
+    "orchestrator/**/*.*"
+  ],
+  "taskAllowedTools": [
+    "Read",
+    "Write",
+    "Edit",
+    "Glob",
+    "Grep",
+    "Bash",
+    "WebFetch",
+    "WebSearch",
+    "Task",
+    "NotebookEdit"
+  ],
+  "hooks": [
+    {
+      "type": "claude",
+      "event": "SessionStart",
+      "tasks": [
+        {
+          "name": "session-briefing",
+          "type": "script",
+          "command": "$(prove_it prefix)/libexec/briefing",
+          "quiet": true
+        }
+      ]
+    },
+    {
+      "type": "claude",
+      "event": "PreToolUse",
+      "matcher": "Write|Edit|MultiEdit|NotebookEdit|Bash|mcp__.*",
+      "tasks": [
+        {
+          "name": "lock-config",
+          "type": "script",
+          "command": "$(prove_it prefix)/libexec/guard-config",
+          "quiet": true,
+          "params": {
+            "paths": [
+              ".claude/prove_it/config.json",
+              ".claude/prove_it/config.local.json"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "claude",
+      "event": "Stop",
+      "tasks": [
+        {
+          "name": "fast-tests",
+          "type": "script",
+          "command": "./script/test_fast",
+          "when": {
+            "sourcesModifiedSinceLastRun": true,
+            "sourceFilesEditedThisTurn": true
+          }
+        },
+        {
+          "name": "lint",
+          "type": "script",
+          "command": "cd dashboard && bundle exec standardrb --fix $(git diff --name-only --diff-filter=d HEAD | grep '^dashboard/.*\\.rb$' | sed 's|^dashboard/||' | tr '\\n' ' ')",
+          "when": {
+            "sourceFilesEditedThisTurn": true
+          }
+        },
+        {
+          "name": "full-tests",
+          "type": "script",
+          "command": "./script/test",
+          "parallel": true,
+          "when": {
+            "signal": "done",
+            "sourceFilesEditedThisTurn": true
+          }
+        },
+        {
+          "name": "security",
+          "type": "script",
+          "command": "cd dashboard && bundle exec brakeman -q --no-pager",
+          "parallel": true,
+          "when": {
+            "signal": "done"
+          }
+        }
+      ]
+    }
+  ],
+  "initSeed": "0e2d3277842c"
+}

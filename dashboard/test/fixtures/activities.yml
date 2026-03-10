@@ -1,0 +1,9 @@
+working_started:
+  project: working
+  action: "started"
+  details: "Began working on GL refactor"
+
+waiting_question:
+  project: waiting_input
+  action: "waiting_input"
+  details: "Asked about map provider preference"

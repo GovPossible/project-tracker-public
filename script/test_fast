@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+# prove_it: fast tests—runs every time Claude finishes a response (if sources changed)
+# Runs only test files related to modified source files
+set -e
+trap 'prove_it record --name fast-tests --result $?' EXIT
+
+# Find modified Ruby files (staged + unstaged) under dashboard/
+MODIFIED=$(git diff --name-only --diff-filter=d HEAD 2>/dev/null | grep '^dashboard/.*\.rb$' || true)
+
+if [ -z "$MODIFIED" ]; then
+  echo "No modified Ruby files found, skipping fast tests."
+  exit 0
+fi
+
+# Build list of test files that correspond to modified source files
+TEST_FILES=""
+for file in $MODIFIED; do
+  # Strip dashboard/ prefix for Rails test resolution
+  rel_file="${file#dashboard/}"
+
+  # If it's already a test file, include it directly
+  if echo "$rel_file" | grep -q "^test/"; then
+    if [ -f "$file" ]; then
+      TEST_FILES="$TEST_FILES $rel_file"
+    fi
+    continue
+  fi
+
+  # Map source file to test file
+  test_file=$(echo "$rel_file" | sed 's|^app/|test/|' | sed 's|\.rb$|_test.rb|')
+  if [ -f "dashboard/$test_file" ]; then
+    TEST_FILES="$TEST_FILES $test_file"
+  fi
+done
+
+if [ -z "$TEST_FILES" ]; then
+  echo "No matching test files found for modified sources, skipping."
+  exit 0
+fi
+
+echo "Running fast tests for:$TEST_FILES"
+cd dashboard
+rvm ruby-3.2.9@project-tracker do bundle exec bin/rails test $TEST_FILES

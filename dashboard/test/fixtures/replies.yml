@@ -1,0 +1,15 @@
+unread_email:
+  project: waiting_input
+  channel: 0
+  from_address: "user@example.com"
+  body: "Use Mapbox for the cemetery map"
+  received_at: "2026-02-28 14:30:00"
+  read: false
+
+read_sms:
+  project: done
+  channel: 1
+  from_address: "+15551234567"
+  body: "Looks good, ship it"
+  received_at: "2026-02-27 09:00:00"
+  read: true

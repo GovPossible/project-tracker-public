@@ -1,0 +1,11 @@
+# Project Tracker Agent Orchestrator
+# Install with: crontab orchestrator/crontab.example
+# Or append with: crontab -l | cat - orchestrator/crontab.example | crontab -
+
+# Update paths below to match your workspace location
+
+# Run orchestrator every 5 minutes
+*/5 * * * * /home/<user>/workspace/project-tracker/orchestrator/run.sh >> /var/log/claude-agent/orchestrator.log 2>&1
+
+# Health check every 30 minutes
+*/30 * * * * /home/<user>/workspace/project-tracker/orchestrator/health-check.sh >> /var/log/claude-agent/health-check.log 2>&1

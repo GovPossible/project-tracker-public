@@ -1,0 +1,37 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(bash -l -c \"rvm ruby-3.0.5@erp-rails-70-ruby-3 do bundle exec bin/rails test*\")",
+      "Bash(bash -l -c \"rvm ruby-3.2.9@commportal-v2 do bundle exec bin/rails test*\")",
+      "Bash(bash -l -c \"rvm ruby-3.2.9@project-tracker do bundle exec bin/rails test*\")",
+      "Bash(git *)",
+      "Bash(gh *)",
+      "Bash(bundle exec standardrb *)",
+      "Bash(ls *)",
+      "Bash(pwd)",
+      "Bash(cat *)",
+      "Bash(which *)",
+      "Bash(node *)",
+      "Bash(npm *)",
+      "mcp__project-tracker-agent__*"
+    ],
+    "deny": []
+  },
+  "hooks": {
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "eval \"$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)\" && prove_it verify"
+          },
+          {
+            "type": "command",
+            "command": "eval \"$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)\" && turbocommit commit"
+          }
+        ]
+      }
+    ]
+  }
+}

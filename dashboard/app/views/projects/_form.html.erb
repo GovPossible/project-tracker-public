@@ -1,0 +1,88 @@
+<%= form_with model: project, builder: TailwindBuilder, class: "space-y-4 max-w-2xl" do |f| %>
+  <% if project.errors.any? %>
+    <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+      <h3 class="text-sm font-medium text-red-800"><%= pluralize(project.errors.count, "error") %> prevented saving:</h3>
+      <ul class="mt-2 text-sm text-red-700 list-disc list-inside">
+        <% project.errors.full_messages.each do |msg| %>
+          <li><%= msg %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div>
+    <%= f.label :title %>
+    <%= f.text_field :title %>
+    <%= f.error :title %>
+  </div>
+
+  <div>
+    <%= f.label :description %>
+    <%= f.text_area :description, rows: 8 %>
+    <p class="text-xs text-gray-500 mt-1">Markdown supported</p>
+    <%= f.error :description %>
+  </div>
+
+  <div class="grid grid-cols-2 gap-4">
+    <div>
+      <%= f.label :priority %>
+      <%= f.select :priority, Project.priorities.keys.map { |p| [p.humanize, p] } %>
+      <%= f.error :priority %>
+    </div>
+
+    <div>
+      <%= f.label :source %>
+      <%= f.select :source, Project.sources.keys.map { |s| [s.humanize, s] } %>
+      <%= f.error :source %>
+    </div>
+  </div>
+
+  <% if project.persisted? %>
+    <div class="grid grid-cols-2 gap-4">
+      <div>
+        <%= f.label :status %>
+        <%= f.select :status, Project.statuses.keys.map { |s| [s.humanize, s] } %>
+        <%= f.error :status %>
+      </div>
+    </div>
+  <% end %>
+
+  <div>
+    <%= f.label :repos, "Target Repos" %>
+    <div class="flex gap-4 mt-1">
+      <% %w[erp commportal-v2].each do |repo| %>
+        <label class="flex items-center gap-2 text-sm text-gray-700">
+          <input type="checkbox" name="project[repos][]" value="<%= repo %>"
+            <%= "checked" if project.repos&.include?(repo) %>
+            class="rounded border-gray-300 text-purple-600 focus:ring-purple-500">
+          <%= repo %>
+        </label>
+      <% end %>
+    </div>
+    <input type="hidden" name="project[repos][]" value="">
+  </div>
+
+  <div>
+    <%= f.label :max_attempts %>
+    <%= f.number_field :max_attempts, min: 1, max: 10 %>
+    <%= f.error :max_attempts %>
+  </div>
+
+  <div data-controller="file-upload"
+       data-file-upload-cloud-name-value="<%= ENV["CLOUDINARY_CLOUD_NAME"] %>"
+       data-file-upload-upload-preset-value="<%= ENV["CLOUDINARY_UPLOAD_PRESET"] %>"
+       data-file-upload-existing-urls-value="<%= (project.file_urls || []).to_json %>">
+    <label class="block text-sm font-medium text-gray-700 mb-1">Attachments</label>
+    <div data-file-upload-target="preview" class="space-y-2"></div>
+    <input type="hidden" name="project[file_urls][]" value="">
+    <input type="file" class="hidden" data-file-upload-target="fileInput" data-action="change->file-upload#fileSelected">
+    <button type="button" data-action="file-upload#selectFile"
+      class="mt-2 text-sm text-purple-600 hover:text-purple-800 cursor-pointer">Attach file</button>
+    <p class="text-xs text-gray-500 mt-1">Images, PDFs, or any file the agent may need</p>
+  </div>
+
+  <div class="flex gap-3 pt-2">
+    <%= f.submit %>
+    <%= link_to "Cancel", (project.persisted? ? project : projects_path), class: "bg-gray-100 text-gray-700 px-4 py-2 rounded-lg text-sm hover:bg-gray-200" %>
+  </div>
+<% end %>
