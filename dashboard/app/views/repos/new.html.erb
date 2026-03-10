@@ -1,0 +1,7 @@
+<div class="mb-6">
+  <%= link_to "&larr; Repos".html_safe, repos_path, class: "text-sm text-purple-700 hover:underline" %>
+</div>
+
+<h1 class="text-2xl font-bold text-gray-900 mb-6">Add Repo</h1>
+
+<%= render "form", repo: @repo %>

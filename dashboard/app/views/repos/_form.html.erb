@@ -1,0 +1,61 @@
+<%= form_with model: repo, builder: TailwindBuilder, class: "space-y-4 max-w-2xl" do |f| %>
+  <% if repo.errors.any? %>
+    <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+      <h3 class="text-sm font-medium text-red-800"><%= pluralize(repo.errors.count, "error") %> prevented saving:</h3>
+      <ul class="mt-2 text-sm text-red-700 list-disc list-inside">
+        <% repo.errors.full_messages.each do |msg| %>
+          <li><%= msg %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div>
+    <%= f.label :name, "Repo Name" %>
+    <%= f.text_field :name, placeholder: "e.g. my-app" %>
+    <p class="text-xs text-gray-500 mt-1">Short identifier used in project assignments</p>
+    <%= f.error :name %>
+  </div>
+
+  <div>
+    <%= f.label :github_url, "GitHub URL" %>
+    <%= f.text_field :github_url, placeholder: "https://github.com/org/repo" %>
+    <%= f.error :github_url %>
+  </div>
+
+  <div>
+    <%= f.label :framework %>
+    <%= f.select :framework, [["Rails", "rails"], ["Node.js", "node"], ["Other", "other"]], include_blank: "Select..." %>
+    <p class="text-xs text-gray-500 mt-1">Determines setup steps (bundle install, npm install, etc.)</p>
+  </div>
+
+  <div class="grid grid-cols-2 gap-4">
+    <div>
+      <%= f.label :ruby_version, "Ruby Version" %>
+      <%= f.text_field :ruby_version, placeholder: "e.g. 3.2.9" %>
+      <p class="text-xs text-gray-500 mt-1">For RVM install</p>
+    </div>
+
+    <div>
+      <%= f.label :gemset, "RVM Gemset" %>
+      <%= f.text_field :gemset, placeholder: "e.g. my-app" %>
+    </div>
+  </div>
+
+  <div>
+    <%= f.label :test_command, "Test Command" %>
+    <%= f.text_field :test_command, placeholder: "e.g. bundle exec rails test" %>
+    <p class="text-xs text-gray-500 mt-1">Command to run the full test suite</p>
+  </div>
+
+  <div>
+    <%= f.label :local_path, "Local Path (optional)" %>
+    <%= f.text_field :local_path, placeholder: "Auto-set by setup script if blank" %>
+    <p class="text-xs text-gray-500 mt-1">Filesystem path on the VPS. Leave blank to auto-detect from WORKSPACE_DIR.</p>
+  </div>
+
+  <div class="flex gap-3 pt-2">
+    <%= f.submit %>
+    <%= link_to "Cancel", (repo.persisted? ? repo : repos_path), class: "bg-gray-100 text-gray-700 px-4 py-2 rounded-lg text-sm hover:bg-gray-200" %>
+  </div>
+<% end %>

@@ -1,0 +1,27 @@
+erp:
+  name: erp
+  github_url: https://github.com/example/erp
+  local_path: /home/deploy/workspace/erp
+  ruby_version: "3.0.5"
+  gemset: erp-rails-70-ruby-3
+  setup_status: ready
+  framework: rails
+  test_command: "bundle exec rails test"
+
+commportal:
+  name: commportal-v2
+  github_url: https://github.com/example/commportal-v2
+  local_path: /home/deploy/workspace/commportal-v2
+  ruby_version: "3.2.9"
+  gemset: commportal-v2
+  setup_status: ready
+  framework: rails
+  test_command: "bundle exec rails test"
+
+pending_repo:
+  name: new-app
+  github_url: https://github.com/example/new-app
+  setup_status: pending
+  framework: rails
+  ruby_version: "3.2.9"
+  gemset: new-app

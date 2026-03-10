@@ -119,7 +119,7 @@ send_sms_alert() {
       -u "${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}" \
       --data-urlencode "From=${TWILIO_FROM}" \
       --data-urlencode "To=${TWILIO_TO}" \
-      --data-urlencode "Body=[Agent] ${message}" \
+      --data-urlencode "Body=[GP Agent] ${message}" \
       >/dev/null 2>&1 || true
   fi
 }
@@ -127,19 +127,81 @@ send_sms_alert() {
 # --- Pull latest code ---
 pull_repos() {
   log "Pulling latest from repos..."
-  for repo in "$TRACKER_REPO" "$ERP_REPO" "$COMMPORTAL_REPO"; do
-    if [[ -d "$repo" ]]; then
-      git -C "$repo" fetch origin --quiet 2>/dev/null || true
-      # Only pull if on main/master and working tree is clean
-      local branch
-      branch=$(git -C "$repo" rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
-      if [[ "$branch" == "main" || "$branch" == "master" ]]; then
-        if git -C "$repo" diff --quiet 2>/dev/null; then
-          git -C "$repo" pull --ff-only --quiet 2>/dev/null || true
-        fi
+
+  # Always pull tracker repo
+  if [[ -d "$TRACKER_REPO" ]]; then
+    pull_single_repo "$TRACKER_REPO"
+  fi
+
+  # Pull all configured repos from the dashboard
+  local repos_json
+  repos_json=$(api_get "/repos" 2>/dev/null || echo "[]")
+
+  if [[ "$repos_json" != "[]" ]]; then
+    local repo_count
+    repo_count=$(echo "$repos_json" | jq 'length' 2>/dev/null || echo "0")
+    for ((i = 0; i < repo_count; i++)); do
+      local path status
+      path=$(echo "$repos_json" | jq -r ".[$i].local_path // empty")
+      status=$(echo "$repos_json" | jq -r ".[$i].setup_status")
+      if [[ -n "$path" && -d "$path" && "$status" == "ready" ]]; then
+        pull_single_repo "$path"
       fi
+    done
+  fi
+}
+
+pull_single_repo() {
+  local repo="$1"
+  git -C "$repo" fetch origin --quiet 2>/dev/null || true
+  local branch
+  branch=$(git -C "$repo" rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
+  if [[ "$branch" == "main" || "$branch" == "master" ]]; then
+    if git -C "$repo" diff --quiet 2>/dev/null; then
+      git -C "$repo" pull --ff-only --quiet 2>/dev/null || true
+    fi
+  fi
+}
+
+# --- Repo setup ---
+setup_pending_repos() {
+  log "Checking for repos pending setup..."
+  local pending
+  pending=$(api_get "/repos/pending_setup" 2>/dev/null || echo "[]")
+
+  if [[ "$pending" == "[]" || -z "$pending" ]]; then
+    return 0
+  fi
+
+  local count
+  count=$(echo "$pending" | jq 'length' 2>/dev/null || echo "0")
+  log "Found $count repo(s) pending setup."
+
+  for ((i = 0; i < count; i++)); do
+    local repo_id github_url name framework ruby_version gemset
+    repo_id=$(echo "$pending" | jq -r ".[$i].id")
+    github_url=$(echo "$pending" | jq -r ".[$i].github_url")
+    name=$(echo "$pending" | jq -r ".[$i].name")
+    framework=$(echo "$pending" | jq -r ".[$i].framework // empty")
+    ruby_version=$(echo "$pending" | jq -r ".[$i].ruby_version // empty")
+    gemset=$(echo "$pending" | jq -r ".[$i].gemset // empty")
+
+    log "Setting up repo: $name ($github_url)"
+    if "$SCRIPT_DIR/setup-repo.sh" "$repo_id" "$github_url" "$name" "$framework" "$ruby_version" "$gemset" 2>&1; then
+      log "Repo $name setup completed."
+    else
+      error "Repo $name setup failed."
     fi
   done
+}
+
+# --- Resolve repo name to local path via API ---
+resolve_repo_path() {
+  local repo_name="$1"
+  local repos_json
+  repos_json=$(api_get "/repos" 2>/dev/null || echo "[]")
+
+  echo "$repos_json" | jq -r --arg name "$repo_name" '.[] | select(.name == $name and .setup_status == "ready") | .local_path // empty' 2>/dev/null
 }
 
 # --- Find work ---
@@ -236,8 +298,9 @@ find_project() {
 
 # --- Honeybadger fault → project creation ---
 check_honeybadger_faults() {
-  # Add your Honeybadger project IDs here
-  local HB_PROJECTS=(${HONEYBADGER_PROJECT_IDS:-})
+  # Configure HONEYBADGER_PROJECT_IDS as a space-separated list in config.env
+  IFS=' ' read -ra HB_PROJECTS <<< "${HONEYBADGER_PROJECT_IDS:-}"
+  if [[ ${#HB_PROJECTS[@]} -eq 0 ]]; then return; fi
   local HB_API="https://app.honeybadger.io/v2"
   local auth
   auth=$(echo -n "${HONEYBADGER_AUTH_TOKEN}:" | base64)
@@ -261,19 +324,10 @@ check_honeybadger_faults() {
 
       # Check if a project already exists for this fault
       # We create a project via the dashboard API and it checks uniqueness on honeybadger_fault_id
+      # HONEYBADGER_PROJECT_MAP is a JSON object: {"12345":{"repo":"my-app","name":"My App"}}
       local repo_name project_name
-      # Map Honeybadger project IDs to repo names — customize for your setup
-      # Set HONEYBADGER_PROJECT_MAP in config.env as "hb_id:repo_name:display_name,..."
-      repo_name="unknown"; project_name="Unknown"
-      IFS=',' read -ra HB_MAP <<< "${HONEYBADGER_PROJECT_MAP:-}"
-      for mapping in "${HB_MAP[@]}"; do
-        IFS=':' read -r hb_id hb_repo hb_name <<< "$mapping"
-        if [[ "$project_id" == "$hb_id" ]]; then
-          repo_name="$hb_repo"
-          project_name="$hb_name"
-          break
-        fi
-      done
+      repo_name=$(echo "${HONEYBADGER_PROJECT_MAP:-{}}" | jq -r --arg pid "$project_id" '.[$pid].repo // "unknown"' 2>/dev/null)
+      project_name=$(echo "${HONEYBADGER_PROJECT_MAP:-{}}" | jq -r --arg pid "$project_id" '.[$pid].name // "Unknown"' 2>/dev/null)
 
       local environment notices_count component action
       environment=$(echo "$faults" | jq -r ".results[$i].environment // \"production\"")
@@ -408,7 +462,10 @@ Use the get_current_project tool to read the full project details, then implemen
     prompt+="Project repos: ${repos}
 "
   else
-    prompt+="No target repos specified. Determine which repo(s) this project belongs to by reading the project description. The options are 'erp' and 'commportal-v2'. Update the project repos using set_project_branches before starting work. If you cannot determine the repo with high confidence, use send_email to ask the project owner which repo(s) this project targets, update status to 'waiting_input', and stop.
+    # Build dynamic list of available repos
+    local available_repos
+    available_repos=$(api_get "/repos" 2>/dev/null | jq -r '[.[] | select(.setup_status == "ready") | .name] | join(", ")' 2>/dev/null || echo "")
+    prompt+="No target repos specified. Determine which repo(s) this project belongs to by reading the project description. The available repos are: ${available_repos:-none configured}. Update the project repos using set_project_branches before starting work. If you cannot determine the repo with high confidence, use send_email to ask the project owner which repo(s) this project targets, update status to 'waiting_input', and stop.
 "
   fi
 
@@ -449,6 +506,7 @@ main() {
 
   acquire_lock
   check_claude_auth
+  setup_pending_repos
   pull_repos
 
   # Find work
@@ -477,11 +535,12 @@ main() {
 
   for repo in $repos; do
     local repo_path branch_name worktree
-    case "$repo" in
-      erp) repo_path="$ERP_REPO" ;;
-      commportal-v2|commportal) repo_path="$COMMPORTAL_REPO" ;;
-      *) log "Unknown repo: $repo, skipping"; continue ;;
-    esac
+    repo_path=$(resolve_repo_path "$repo")
+
+    if [[ -z "$repo_path" || ! -d "$repo_path" ]]; then
+      log "Repo '$repo' not found or not ready, skipping"
+      continue
+    fi
 
     branch_name="feature/project-${project_id}"
     worktree=$(setup_worktree "$repo_path" "$branch_name") || continue

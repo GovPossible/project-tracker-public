@@ -49,14 +49,17 @@
 
   <div>
     <%= f.label :repos, "Target Repos" %>
-    <div class="flex gap-4 mt-1">
-      <% %w[erp commportal-v2].each do |repo| %>
+    <div class="flex flex-wrap gap-4 mt-1">
+      <% Repo.ready.order(:name).each do |repo| %>
         <label class="flex items-center gap-2 text-sm text-gray-700">
-          <input type="checkbox" name="project[repos][]" value="<%= repo %>"
-            <%= "checked" if project.repos&.include?(repo) %>
+          <input type="checkbox" name="project[repos][]" value="<%= repo.name %>"
+            <%= "checked" if project.repos&.include?(repo.name) %>
             class="rounded border-gray-300 text-purple-600 focus:ring-purple-500">
-          <%= repo %>
+          <%= repo.name %>
         </label>
+      <% end %>
+      <% if Repo.ready.none? %>
+        <span class="text-sm text-gray-400">No repos configured. <%= link_to "Add one", new_repo_path, class: "text-purple-600 hover:underline" %>.</span>
       <% end %>
     </div>
     <input type="hidden" name="project[repos][]" value="">

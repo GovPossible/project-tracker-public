@@ -67,6 +67,20 @@ Authorization: Bearer <DASHBOARD_API_KEY>
 
 The orchestrator and MCP server both use this to communicate with the dashboard.
 
+### Adding repos
+
+After the dashboard is running, navigate to **Repos** in the nav bar and add each repository the agent will work on. For each repo, provide:
+
+- **Name** — short identifier (e.g., `my-app`), used in project assignments
+- **GitHub URL** — full URL to clone from
+- **Framework** — Rails, Node.js, or Other (determines setup steps)
+- **Ruby version / Gemset** — for RVM-based projects
+- **Test command** — how to run the full test suite
+
+When you save a repo, it starts with `pending` status. The orchestrator will automatically clone it, install dependencies, and set up the database on its next run. Once setup completes, the status changes to `ready` and the repo appears as a checkbox option when creating projects.
+
+If setup fails, the setup log is displayed on the repo's show page. Fix the issue and click **Retry Setup**.
+
 ## 2. Quality Tools (prove_it & turbocommit)
 
 Two Homebrew-installable CLI tools provide automated quality gates and commit management for Claude Code sessions:
@@ -262,10 +276,10 @@ At any point the agent can email/SMS you with questions. You reply via the dashb
 
 ## Customizing for your repos
 
-The system is configured for two target repos (`erp` and `commportal-v2`) but you can adapt it:
+Repos are managed via the dashboard UI — no code changes needed to add or remove repos. The orchestrator dynamically resolves repo names to local paths via the dashboard API.
 
-1. **`orchestrator/run.sh`** — update the repo path mapping in `setup_worktree`
-2. **`orchestrator/config.env`** — update `ERP_REPO`, `COMMPORTAL_REPO`, or add new repo paths
-3. **`orchestrator/AGENT_INSTRUCTIONS.md`** — update the coding conventions and workflow for your stack
-4. **`orchestrator/settings.json.example`** — update Claude Code permissions for your test commands
-5. **`dashboard/app/views/projects/_form.html.erb`** — update the repo checkboxes
+To customize agent behavior per repo:
+
+1. **`orchestrator/AGENT_INSTRUCTIONS.md`** — update the coding conventions and workflow for your stack
+2. **`orchestrator/settings.json.example`** — update Claude Code permissions for your test commands
+3. **`orchestrator/setup-repo.sh`** — customize the clone/setup steps if you need additional setup beyond the defaults (bundle install, npm install, db:create/migrate)

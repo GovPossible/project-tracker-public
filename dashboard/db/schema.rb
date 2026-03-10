@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_03_08_202706) do
+ActiveRecord::Schema[8.1].define(version: 2026_03_10_133154) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -57,6 +57,21 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_08_202706) do
     t.datetime "updated_at", null: false
     t.index ["project_id", "read"], name: "index_replies_on_project_id_and_read"
     t.index ["project_id"], name: "index_replies_on_project_id"
+  end
+
+  create_table "repos", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "framework"
+    t.string "gemset"
+    t.string "github_url", null: false
+    t.string "local_path"
+    t.string "name", null: false
+    t.string "ruby_version"
+    t.text "setup_log"
+    t.string "setup_status", default: "pending", null: false
+    t.string "test_command"
+    t.datetime "updated_at", null: false
+    t.index ["name"], name: "index_repos_on_name", unique: true
   end
 
   create_table "sessions", force: :cascade do |t|

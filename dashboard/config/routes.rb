@@ -18,6 +18,11 @@ Rails.application.routes.draw do
       post :nudge
     end
   end
+  resources :repos do
+    member do
+      post :retry_setup
+    end
+  end
 
   namespace :api do
     namespace :v1 do
@@ -38,6 +43,12 @@ Rails.application.routes.draw do
           collection do
             patch :mark_read
           end
+        end
+      end
+
+      resources :repos, only: [:index, :show, :update] do
+        collection do
+          get :pending_setup
         end
       end
     end
