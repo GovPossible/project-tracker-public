@@ -1,9 +1,7 @@
 {
   "permissions": {
     "allow": [
-      "Bash(bash -l -c \"rvm ruby-3.0.5@erp-rails-70-ruby-3 do bundle exec bin/rails test*\")",
-      "Bash(bash -l -c \"rvm ruby-3.2.9@commportal-v2 do bundle exec bin/rails test*\")",
-      "Bash(bash -l -c \"rvm ruby-3.2.9@project-tracker do bundle exec bin/rails test*\")",
+      "Bash(bash -l -c \"rvm <your-ruby>@<your-gemset> do bundle exec bin/rails test*\")",
       "Bash(git *)",
       "Bash(gh *)",
       "Bash(bundle exec standardrb *)",

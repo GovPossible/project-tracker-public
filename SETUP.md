@@ -7,6 +7,7 @@ This guide walks you through setting up the project tracker for your own repos. 
 - Ruby 3.2+ and Bundler
 - Node.js 20+
 - PostgreSQL
+- [Homebrew](https://brew.sh/) (Linux or macOS)
 - A [Claude Code](https://docs.anthropic.com/en/docs/claude-code) subscription (Max plan or API key)
 - A VPS or always-on server for the orchestrator (Ubuntu 22.04+ recommended)
 
@@ -66,7 +67,55 @@ Authorization: Bearer <DASHBOARD_API_KEY>
 
 The orchestrator and MCP server both use this to communicate with the dashboard.
 
-## 2. MCP Server
+## 2. Quality Tools (prove_it & turbocommit)
+
+Two Homebrew-installable CLI tools provide automated quality gates and commit management for Claude Code sessions:
+
+- **[prove_it](https://github.com/searlsco/prove_it)** — runs tests, linting, and security scans automatically when Claude finishes a response. Configured via `.claude/prove_it/config.json`.
+- **[turbocommit](https://github.com/searlsco/turbocommit)** — generates commit messages and auto-commits when Claude completes work. Runs as a Claude Code Stop hook.
+
+### Installation
+
+```bash
+brew tap searlsco/tap
+brew install searlsco/tap/prove_it
+brew install searlsco/tap/turbocommit
+```
+
+### How they integrate
+
+Both tools hook into Claude Code at different levels:
+
+**prove_it** uses Claude Code's project-level hooks (`.claude/prove_it/config.json`):
+- **SessionStart** — prints a briefing of outstanding work
+- **PreToolUse** — guards its own config files from being modified by Claude
+- **Stop** — runs fast tests (changed files only), linting (StandardRB), full test suite, and Brakeman security scan
+
+The Stop tasks use conditional triggers:
+- `fast-tests` and `lint` run after every Claude response that edits source files
+- `full-tests` and `security` run only when Claude signals "done" (end of a task)
+
+**turbocommit** runs as a Claude Code settings hook (`~/.claude/settings.json`):
+- Fires on every Stop event
+- Generates a commit message from staged changes and commits automatically
+
+### Test scripts
+
+prove_it calls two test scripts included in this repo:
+
+- `script/test_fast` — maps modified source files to their test files and runs only those
+- `script/test` — runs the full Rails test suite
+
+### Configuration
+
+The prove_it config at `.claude/prove_it/config.json` is checked into the repo. The `config.local.json` file (gitignored) can override settings locally.
+
+You'll want to customize:
+- The `sources` array if you change the project structure
+- The `lint` command if you use a different linter
+- The RVM gemset in `script/test` and `script/test_fast` to match your setup
+
+## 3. MCP Server (Claude Code tools)
 
 The MCP server gives Claude Code access to project management tools, email, SMS, and deploy triggers. It runs as a subprocess of Claude Code via stdio transport.
 
@@ -108,7 +157,7 @@ Create a `.mcp.json` in the project-tracker root (this file is gitignored):
 
 Only include the env vars for services you're using. `DASHBOARD_URL` and `DASHBOARD_API_KEY` are the only required ones.
 
-## 3. Orchestrator (VPS)
+## 4. Orchestrator (VPS)
 
 The orchestrator is a set of shell scripts that run on cron. Every 5 minutes it checks for work and launches Claude Code sessions.
 
@@ -137,7 +186,7 @@ This installs system packages, PostgreSQL, Node.js, Claude Code CLI, RVM, Ruby, 
    ```bash
    cp orchestrator/settings.json.example ~/.claude/settings.json
    ```
-   Edit the permissions to match your repo structure and RVM gemsets.
+   Edit the permissions to match your repo structure and RVM gemsets. This file also includes Stop hooks for `prove_it verify` and `turbocommit commit` — make sure both are installed via Homebrew (see section 2).
 
 4. **Create `.mcp.json`** in the project-tracker root (see MCP Server section above).
 
@@ -175,7 +224,7 @@ tail -f /var/log/claude-agent/orchestrator.log
 tail -f /var/log/claude-agent/health-check.log
 ```
 
-## 4. GitHub Webhooks (optional)
+## 5. GitHub Webhooks (optional)
 
 To have PR review comments automatically appear as replies on projects:
 
